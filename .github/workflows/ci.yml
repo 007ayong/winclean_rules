@@ -1,0 +1,87 @@
+name: WinClean Rules CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'rules/**/*.yaml'
+      - 'rules/**/*.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  releases: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get date
+        id: date
+        run: echo "VERSION=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+
+      - name: Build packer tool
+        run: cargo build --release --bin winclean-rules-packer
+
+      - name: Create output directory
+        run: mkdir -p dist
+
+      - name: Pack rules
+        run: |
+          ./target/release/winclean-rules-packer pack \
+            --input ./rules \
+            --output ./dist/rules.bin \
+            --compress zstd
+
+      - name: Get rules count
+        id: rules-count
+        run: |
+          COUNT=$(./target/release/winclean-rules-packer info --input dist/rules.bin 2>/dev/null | grep "规则数量" | awk '{print $3}')
+          echo "COUNT=$COUNT" >> $GITHUB_OUTPUT
+          echo "规则数量: $COUNT"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/rules.bin
+          name: WinClean Rules v${{ steps.date.outputs.VERSION }}
+          tag_name: v${{ steps.date.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          body: |
+            ## WinClean Rules Binary Package
+
+            **Version:** ${{ steps.date.outputs.VERSION }}
+
+            **Build Date:** ${{ env.BUILD_DATE }}
+
+            **Rules Count:** ${{ steps.rules-count.outputs.COUNT }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rules-bin-v${{ steps.date.outputs.VERSION }}
+          path: dist/rules.bin
+          retention-days: 30
+
+      - name: Upload packer tool
+        uses: actions/upload-artifact@v4
+        with:
+          name: packer-v${{ steps.date.outputs.VERSION }}
+          path: target/release/winclean-rules-packer
+          retention-days: 30
+
+      - name: Notify
+        run: echo "✅ Release v${{ steps.date.outputs.VERSION }} 已发布"

@@ -1,0 +1,38 @@
+# Windows 软件管家
+# 军华软件园 -默认使用的安全下载器
+# Beijing AoLanDe Information Technology Co., Ltd.
+
+id: soft_mgr
+name: Windows 软件管家
+risk: high
+
+systeminfo:
+  - win11_x64
+
+update: 2026-1-3
+
+match:
+  path:
+    - "%ProgramFiles(x86)%\\<SoftMgr.+>"
+    - "%APPDATA%\\<SoftMgr.+>"
+    - "%LOCALAPPDATA%\\Temp\\<.+SoftMgr.+>"
+    - "C:\\Windows\\System32\\Tasks\\<SoftMgr.+>"
+    - "C:\\Windows\\Prefetch\\<SOFTMGR.+>"
+    - "%APPDATA%\\Microsoft\\Windows\\Recent\\<SoftMgr([.\\w]+)>"
+    - "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\<SoftMgr.+>"
+  registry:
+    - path: "HKEY_CLASSES_ROOT\\*\\shellex\\ContextMenuHandlers\\"
+      key: "SoftMgrOEMExt"
+      value: "*"
+      value_data: "*"
+      action: delete_key
+    - path: "HKEY_CLASSES_ROOT\\lnkfile\\shellex\\ContextMenuHandlers\\"
+      key: "SoftMgrOEMExt"
+      value: "*"
+      value_data: "*"
+      action: delete_key
+    - path: "HKEY_CLASSES_ROOT\\lnkfile\\shellex\\ContextMenuHandlers\\"
+      key: "SoftMgrOEMExt"
+      value: "*"
+      value_data: "*"
+      action: delete_key
