@@ -21,12 +21,14 @@ jobs:
 
       - name: Get date
         id: date
-        run: echo "VERSION=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+        run: |
+          echo "VERSION=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%d %H:%M:%SZ')" >> $GITHUB_OUTPUT
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
+      - name: Setup Rust
+        uses: actions/setup-rust@v1
         with:
-          toolchain: stable
+          rust-version: stable
           profile: minimal
 
       - name: Build packer tool
@@ -45,7 +47,9 @@ jobs:
       - name: Get rules count
         id: rules-count
         run: |
-          COUNT=$(./target/release/winclean-rules-packer info --input dist/rules.bin 2>/dev/null | grep "规则数量" | awk '{print $3}')
+          OUTPUT=$(./target/release/winclean-rules-packer info --input dist/rules.bin 2>/dev/null)
+          echo "$OUTPUT"
+          COUNT=$(echo "$OUTPUT" | grep '^规则数量:' | sed 's/规则数量: //')
           echo "COUNT=$COUNT" >> $GITHUB_OUTPUT
           echo "规则数量: $COUNT"
 
@@ -62,7 +66,7 @@ jobs:
 
             **Version:** ${{ steps.date.outputs.VERSION }}
 
-            **Build Date:** ${{ env.BUILD_DATE }}
+            **Build Date:** ${{ steps.date.outputs.BUILD_DATE }}
 
             **Rules Count:** ${{ steps.rules-count.outputs.COUNT }}
         env:
